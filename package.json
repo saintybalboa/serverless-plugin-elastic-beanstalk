@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:rawphp/serverless-plugin-elastic-beanstalk.git"
+    "url": "git@github.com:saintybalboa/serverless-plugin-elastic-beanstalk.git"
   },
   "keywords": [
     "serverless",
@@ -63,5 +63,11 @@
     "webpack": "2.x.x",
     "yamljs": "0.x.x",
     "zip-unzip-promise": "1.0.0"
-  }
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "src"
+  ]
 }
