@@ -68,6 +68,6 @@
     "LICENSE",
     "README.md",
     "CHANGELOG.md",
-    "src"
+    "dist"
   ]
 }
