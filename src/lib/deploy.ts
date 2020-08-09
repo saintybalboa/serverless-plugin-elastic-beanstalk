@@ -53,6 +53,26 @@ export default async function deploy() {
 
   const EB: ElasticBeanstalk = this.getElasticBeanstalkInstance(this.serverless, this.options.region);
 
+  this.logger.log('Checking Environment...');
+
+  const environment = await EB.waitFor('environmentExists', {
+    ApplicationName: applicationName
+  }).promise();
+
+  this.logger.log(JSON.stringify(environment));
+
+  if (!environment) {
+    this.logger.log('Creating New Application...');
+
+    this.logger.log(
+      JSON.stringify(
+        await EB.createApplication({
+          ApplicationName: applicationName
+        }).promise(),
+      ),
+    );
+  }
+
   this.logger.log('Creating New Application Version...');
 
   this.logger.log(
@@ -90,17 +110,32 @@ export default async function deploy() {
   }
 
   this.logger.log('New Application Version Created Successfully');
-  this.logger.log('Updating Application Environment...');
 
-  this.logger.log(
-    JSON.stringify(
-      await EB.updateEnvironment({
-        ApplicationName: applicationName,
-        EnvironmentName: environmentName,
-        VersionLabel: versionLabel,
-      }).promise(),
-    ),
-  );
+  if (!environment) {
+    this.logger.log('Creating Application Environment...');
+
+    this.logger.log(
+      JSON.stringify(
+        await EB.createEnvironment({
+          ApplicationName: applicationName,
+          EnvironmentName: environmentName,
+          VersionLabel: versionLabel,
+        }).promise(),
+      ),
+    );
+  } else {
+    this.logger.log('Updating Application Environment...');
+
+    this.logger.log(
+      JSON.stringify(
+        await EB.updateEnvironment({
+          ApplicationName: applicationName,
+          EnvironmentName: environmentName,
+          VersionLabel: versionLabel,
+        }).promise(),
+      ),
+    );
+  }
 
   this.logger.log('Waiting for environment...');
 

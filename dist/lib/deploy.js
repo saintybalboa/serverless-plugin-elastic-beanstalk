@@ -43,6 +43,17 @@ function deploy() {
         }).promise()));
         this.logger.log('Application Bundle Uploaded to S3 Successfully');
         const EB = this.getElasticBeanstalkInstance(this.serverless, this.options.region);
+        this.logger.log('Checking Environment...');
+        const environment = yield EB.waitFor('environmentExists', {
+            ApplicationName: applicationName
+        }).promise();
+        this.logger.log(JSON.stringify(environment));
+        if (!environment) {
+            this.logger.log('Creating New Application...');
+            this.logger.log(JSON.stringify(yield EB.createApplication({
+                ApplicationName: applicationName
+            }).promise()));
+        }
         this.logger.log('Creating New Application Version...');
         this.logger.log(JSON.stringify(yield EB.createApplicationVersion({
             ApplicationName: applicationName,
@@ -71,12 +82,22 @@ function deploy() {
             }
         }
         this.logger.log('New Application Version Created Successfully');
-        this.logger.log('Updating Application Environment...');
-        this.logger.log(JSON.stringify(yield EB.updateEnvironment({
-            ApplicationName: applicationName,
-            EnvironmentName: environmentName,
-            VersionLabel: versionLabel,
-        }).promise()));
+        if (!environment) {
+            this.logger.log('Creating Application Environment...');
+            this.logger.log(JSON.stringify(yield EB.createEnvironment({
+                ApplicationName: applicationName,
+                EnvironmentName: environmentName,
+                VersionLabel: versionLabel,
+            }).promise()));
+        }
+        else {
+            this.logger.log('Updating Application Environment...');
+            this.logger.log(JSON.stringify(yield EB.updateEnvironment({
+                ApplicationName: applicationName,
+                EnvironmentName: environmentName,
+                VersionLabel: versionLabel,
+            }).promise()));
+        }
         this.logger.log('Waiting for environment...');
         updated = false;
         while (!updated) {
