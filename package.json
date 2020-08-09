@@ -68,6 +68,8 @@
     "LICENSE",
     "README.md",
     "CHANGELOG.md",
-    "dist"
+    "travis.yml",
+    "dist",
+    "resources"
   ]
 }
