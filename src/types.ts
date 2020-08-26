@@ -1,6 +1,7 @@
 import CLI from 'serverless/lib/classes/CLI';
 
 export interface IBuildConfig {
+  folder?: string;
   babel?: boolean;
   sourceMaps?: boolean;
   include?: string[];
@@ -9,6 +10,7 @@ export interface IBuildConfig {
 export interface IProjectVariables {
   applicationName: string;
   environmentName: string;
+  solutionStackName: string;
 }
 
 export interface IPluginConfig {

@@ -19,10 +19,8 @@ const getVersion_1 = require("./getVersion");
 function build() {
     return __awaiter(this, void 0, void 0, function* () {
         this.logger.log('Building Application Bundle...');
-        const configPath = `${process.cwd()}/.serverless/stack-config.json`;
-        const config = yield fsp.readJson(configPath);
         this.config.version = getVersion_1.default(this.config.version);
-        const applicationName = config[this.config.variables.applicationName];
+        const applicationName = this.config.applicationName;
         const versionLabel = `${applicationName}-${this.config.version}`;
         const fileName = `bundle-${versionLabel}.zip`;
         this.logger.log(`Creating ${fileName}`);
@@ -33,7 +31,7 @@ function build() {
         const bundler = new bundle_bundler_1.default({
             babel: buildConfig.babel || false,
             logger: this.logger,
-            rootDir: process.cwd(),
+            rootDir: process.cwd() + buildConfig.folder,
             sourceMaps: buildConfig.sourceMaps || false,
         });
         yield bundler.bundle({

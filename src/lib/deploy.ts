@@ -2,7 +2,6 @@ import { ElasticBeanstalk, S3 as IS3 } from "aws-sdk";
 import * as BPromise from 'bluebird';
 import * as fsp from 'fs-promise';
 import * as path from 'path';
-import { IPluginConfig } from '../types';
 import getVersion from './getVersion';
 
 /**
@@ -13,22 +12,15 @@ import getVersion from './getVersion';
 export default async function deploy() {
   this.logger.log('Deploying Application to ElasticBeanstalk...');
 
-  const configPath = `${process.cwd()}/.serverless/stack-config.json`;
-
-  const ebConfig: IPluginConfig = this.config;
-
-  const config = await fsp.readJson(configPath);
-  ebConfig.version = getVersion(ebConfig.version);
-
-  const applicationName = config[ebConfig.variables.applicationName];
-  const environmentName = config[ebConfig.variables.environmentName];
-  const versionLabel = `${applicationName}-${ebConfig.version}`;
+  const version = getVersion(this.config.version);
+  const versionLabel = `${this.config.applicationName}-${version}`;
+  const solutionStackName = this.config.solutionStackName;
 
   let fileName = `bundle-${versionLabel}.zip`;
 
-  if (ebConfig.file) {
-    fileName = ebConfig.file.prefix ? `${ebConfig.file.prefix}/` : '';
-    fileName += ebConfig.file.name ? `${ebConfig.file.name}` : `bundle-${versionLabel}.zip`;
+  if (this.config.file) {
+    fileName = this.config.file.prefix ? `${this.config.file.prefix}/` : '';
+    fileName += this.config.file.name ? `${this.config.file.name}` : `bundle-${versionLabel}.zip`;
   }
 
   const bundlePath = path.resolve(this.artifactTmpDir, `bundle-${versionLabel}.zip`);
@@ -43,7 +35,7 @@ export default async function deploy() {
     JSON.stringify(
       await S3.upload({
         Body: fsp.createReadStream(bundlePath),
-        Bucket: ebConfig.bucket,
+        Bucket: this.config.bucket,
         Key: fileName,
       }).promise(),
     ),
@@ -53,21 +45,21 @@ export default async function deploy() {
 
   const EB: ElasticBeanstalk = this.getElasticBeanstalkInstance(this.serverless, this.options.region);
 
-  this.logger.log('Checking Environment...');
+  this.logger.log('Checking Application Environment...');
 
-  const environment = await EB.waitFor('environmentExists', {
-    ApplicationName: applicationName
+  const applicationVersions = await EB.describeApplicationVersions({
+    ApplicationName: this.config.applicationName
   }).promise();
 
-  this.logger.log(JSON.stringify(environment));
+  const hasApplication: Boolean = applicationVersions && applicationVersions.ApplicationVersions.length > 0;
 
-  if (!environment) {
+  if (!hasApplication) {
     this.logger.log('Creating New Application...');
 
     this.logger.log(
       JSON.stringify(
         await EB.createApplication({
-          ApplicationName: applicationName
+          ApplicationName: this.config.applicationName
         }).promise(),
       ),
     );
@@ -78,10 +70,10 @@ export default async function deploy() {
   this.logger.log(
     JSON.stringify(
       await EB.createApplicationVersion({
-        ApplicationName: applicationName,
+        ApplicationName: this.config.applicationName,
         Process: true,
         SourceBundle: {
-          S3Bucket: ebConfig.bucket,
+          S3Bucket: this.config.bucket,
           S3Key: fileName,
         },
         VersionLabel: versionLabel,
@@ -111,15 +103,25 @@ export default async function deploy() {
 
   this.logger.log('New Application Version Created Successfully');
 
-  if (!environment) {
-    this.logger.log('Creating Application Environment...');
+  if (!hasApplication) {
+    this.logger.log('Creating Environment...');
 
     this.logger.log(
       JSON.stringify(
         await EB.createEnvironment({
-          ApplicationName: applicationName,
-          EnvironmentName: environmentName,
+          ApplicationName: this.config.applicationName,
+          EnvironmentName: this.config.environmentName,
           VersionLabel: versionLabel,
+          SolutionStackName: solutionStackName,
+          // marty todo: set these variables
+          OptionSettings: [
+            {
+              Namespace: 'aws:autoscaling:launchconfiguration',
+              OptionName: 'IamInstanceProfile',
+              Value: 'aws-elasticbeanstalk-ec2-role'
+            },
+            /* more items */
+        ]
         }).promise(),
       ),
     );
@@ -129,8 +131,8 @@ export default async function deploy() {
     this.logger.log(
       JSON.stringify(
         await EB.updateEnvironment({
-          ApplicationName: applicationName,
-          EnvironmentName: environmentName,
+          ApplicationName: this.config.applicationName,
+          EnvironmentName: this.config.environmentName,
           VersionLabel: versionLabel,
         }).promise(),
       ),
@@ -143,7 +145,7 @@ export default async function deploy() {
 
   while (!updated) {
     const response = await EB.describeEnvironments({
-      EnvironmentNames: [environmentName],
+      EnvironmentNames: [this.config.environmentName],
     }).promise();
 
     this.logger.log(JSON.stringify(response));

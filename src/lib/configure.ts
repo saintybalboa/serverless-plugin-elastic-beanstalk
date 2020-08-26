@@ -121,12 +121,10 @@ async function deployApplicationVersion(EB: ElasticBeanstalk, params: any): Prom
 export default async function configure(): Promise<void> {
   this.logger.log('Configuring ElasticBeanstalk Deployment...');
 
-  const stackOutputs = await fsp.readJson(path.resolve(`${process.cwd()}/.serverless/stack-config.json`));
-
   const options = {
-    applicationName: stackOutputs[this.config.variables.applicationName],
+    applicationName:this.config.applicationName,
     env: this.options.env,
-    environmentName: stackOutputs[this.config.variables.environmentName],
+    environmentName: this.config.environmentName,
     key: this.options.key,
     platform: this.config.platform,
     region: this.options.region,
@@ -169,7 +167,7 @@ export default async function configure(): Promise<void> {
     const EB: ElasticBeanstalk = this.getElasticBeanstalkInstance(this.serverless, this.options.region);
 
     const params = {
-      ApplicationName: stackOutputs[this.config.variables.applicationName],
+      ApplicationName: this.config.applicationName,
       SourceBundle: {
         S3Bucket: dockerConfig.bucketName,
         S3Key: 'Dockerrun.aws.json',
@@ -186,6 +184,6 @@ export default async function configure(): Promise<void> {
 
     const script = require(`${process.cwd()}/${this.config.script}`);
 
-    await script(this.serverless, stackOutputs);
+    await script(this.serverless, this.config);
   }
 }

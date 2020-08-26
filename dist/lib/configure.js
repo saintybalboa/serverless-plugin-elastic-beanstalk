@@ -9,7 +9,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const fsp = require("fs-promise");
-const path = require("path");
 /**
  * List of supported platforms.
  *
@@ -121,11 +120,10 @@ function deployApplicationVersion(EB, params) {
 function configure() {
     return __awaiter(this, void 0, void 0, function* () {
         this.logger.log('Configuring ElasticBeanstalk Deployment...');
-        const stackOutputs = yield fsp.readJson(path.resolve(`${process.cwd()}/.serverless/stack-config.json`));
         const options = {
-            applicationName: stackOutputs[this.config.variables.applicationName],
+            applicationName: this.config.applicationName,
             env: this.options.env,
-            environmentName: stackOutputs[this.config.variables.environmentName],
+            environmentName: this.config.environmentName,
             key: this.options.key,
             platform: this.config.platform,
             region: this.options.region,
@@ -156,7 +154,7 @@ function configure() {
             yield configureDockerRun(S3, dockerConfig, this.logger);
             const EB = this.getElasticBeanstalkInstance(this.serverless, this.options.region);
             const params = {
-                ApplicationName: stackOutputs[this.config.variables.applicationName],
+                ApplicationName: this.config.applicationName,
                 SourceBundle: {
                     S3Bucket: dockerConfig.bucketName,
                     S3Key: 'Dockerrun.aws.json',
@@ -169,7 +167,7 @@ function configure() {
         if (this.config.script) {
             this.logger.log(`Executing custom script command: ${this.config.script}`);
             const script = require(`${process.cwd()}/${this.config.script}`);
-            yield script(this.serverless, stackOutputs);
+            yield script(this.serverless, this.config);
         }
     });
 }

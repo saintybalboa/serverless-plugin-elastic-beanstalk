@@ -11,12 +11,9 @@ import getVersion from './getVersion';
 export default async function build(): Promise<void> {
   this.logger.log('Building Application Bundle...');
 
-  const configPath: string = `${process.cwd()}/.serverless/stack-config.json`;
-
-  const config: IPluginConfig = await fsp.readJson(configPath);
   this.config.version = getVersion(this.config.version);
 
-  const applicationName: string = config[this.config.variables.applicationName];
+  const applicationName: string = this.config.applicationName;
   const versionLabel: string = `${applicationName}-${this.config.version}`;
   const fileName: string = `bundle-${versionLabel}.zip`;
 
@@ -31,7 +28,7 @@ export default async function build(): Promise<void> {
   const bundler = new Bundler({
     babel: buildConfig.babel || false,
     logger: this.logger,
-    rootDir: process.cwd(),
+    rootDir: process.cwd() + buildConfig.folder,
     sourceMaps: buildConfig.sourceMaps || false,
   });
 

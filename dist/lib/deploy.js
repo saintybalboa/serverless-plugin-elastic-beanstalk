@@ -20,17 +20,13 @@ const getVersion_1 = require("./getVersion");
 function deploy() {
     return __awaiter(this, void 0, void 0, function* () {
         this.logger.log('Deploying Application to ElasticBeanstalk...');
-        const configPath = `${process.cwd()}/.serverless/stack-config.json`;
-        const ebConfig = this.config;
-        const config = yield fsp.readJson(configPath);
-        ebConfig.version = getVersion_1.default(ebConfig.version);
-        const applicationName = config[ebConfig.variables.applicationName];
-        const environmentName = config[ebConfig.variables.environmentName];
-        const versionLabel = `${applicationName}-${ebConfig.version}`;
+        const version = getVersion_1.default(this.config.version);
+        const versionLabel = `${this.config.applicationName}-${version}`;
+        const solutionStackName = this.config.solutionStackName;
         let fileName = `bundle-${versionLabel}.zip`;
-        if (ebConfig.file) {
-            fileName = ebConfig.file.prefix ? `${ebConfig.file.prefix}/` : '';
-            fileName += ebConfig.file.name ? `${ebConfig.file.name}` : `bundle-${versionLabel}.zip`;
+        if (this.config.file) {
+            fileName = this.config.file.prefix ? `${this.config.file.prefix}/` : '';
+            fileName += this.config.file.name ? `${this.config.file.name}` : `bundle-${versionLabel}.zip`;
         }
         const bundlePath = path.resolve(this.artifactTmpDir, `bundle-${versionLabel}.zip`);
         process.env.PATH = `/root/.local/bin:${process.env.PATH}`;
@@ -38,28 +34,28 @@ function deploy() {
         this.logger.log('Uploading Application Bundle to S3...');
         this.logger.log(JSON.stringify(yield S3.upload({
             Body: fsp.createReadStream(bundlePath),
-            Bucket: ebConfig.bucket,
+            Bucket: this.config.bucket,
             Key: fileName,
         }).promise()));
         this.logger.log('Application Bundle Uploaded to S3 Successfully');
         const EB = this.getElasticBeanstalkInstance(this.serverless, this.options.region);
-        this.logger.log('Checking Environment...');
-        const environment = yield EB.waitFor('environmentExists', {
-            ApplicationName: applicationName
+        this.logger.log('Checking Application Environment...');
+        const applicationVersions = yield EB.describeApplicationVersions({
+            ApplicationName: this.config.applicationName
         }).promise();
-        this.logger.log(JSON.stringify(environment));
-        if (!environment) {
+        const hasApplication = applicationVersions && applicationVersions.ApplicationVersions.length > 0;
+        if (!hasApplication) {
             this.logger.log('Creating New Application...');
             this.logger.log(JSON.stringify(yield EB.createApplication({
-                ApplicationName: applicationName
+                ApplicationName: this.config.applicationName
             }).promise()));
         }
         this.logger.log('Creating New Application Version...');
         this.logger.log(JSON.stringify(yield EB.createApplicationVersion({
-            ApplicationName: applicationName,
+            ApplicationName: this.config.applicationName,
             Process: true,
             SourceBundle: {
-                S3Bucket: ebConfig.bucket,
+                S3Bucket: this.config.bucket,
                 S3Key: fileName,
             },
             VersionLabel: versionLabel,
@@ -82,19 +78,28 @@ function deploy() {
             }
         }
         this.logger.log('New Application Version Created Successfully');
-        if (!environment) {
-            this.logger.log('Creating Application Environment...');
+        if (!hasApplication) {
+            this.logger.log('Creating Environment...');
             this.logger.log(JSON.stringify(yield EB.createEnvironment({
-                ApplicationName: applicationName,
-                EnvironmentName: environmentName,
+                ApplicationName: this.config.applicationName,
+                EnvironmentName: this.config.environmentName,
                 VersionLabel: versionLabel,
+                SolutionStackName: solutionStackName,
+                // marty todo: set these variables
+                OptionSettings: [
+                    {
+                        Namespace: 'aws:autoscaling:launchconfiguration',
+                        OptionName: 'IamInstanceProfile',
+                        Value: 'aws-elasticbeanstalk-ec2-role'
+                    },
+                ]
             }).promise()));
         }
         else {
             this.logger.log('Updating Application Environment...');
             this.logger.log(JSON.stringify(yield EB.updateEnvironment({
-                ApplicationName: applicationName,
-                EnvironmentName: environmentName,
+                ApplicationName: this.config.applicationName,
+                EnvironmentName: this.config.environmentName,
                 VersionLabel: versionLabel,
             }).promise()));
         }
@@ -102,7 +107,7 @@ function deploy() {
         updated = false;
         while (!updated) {
             const response = yield EB.describeEnvironments({
-                EnvironmentNames: [environmentName],
+                EnvironmentNames: [this.config.environmentName],
             }).promise();
             this.logger.log(JSON.stringify(response));
             if (response.Environments[0].Status === 'Ready') {
