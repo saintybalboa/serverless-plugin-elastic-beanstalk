@@ -1,5 +1,5 @@
 import Bundler from 'bundle-bundler';
-import * as fsp from 'fs-promise';
+import fsp from 'promise-fs';
 import { IBuildConfig } from "../types";
 import getVersion from './getVersion';
 
@@ -20,7 +20,7 @@ export default async function build(): Promise<void> {
   this.logger.log(`Creating ${fileName}`);
 
   // make sure artifact directory exists
-  await fsp.ensureDir(this.artifactTmpDir);
+  await fsp.access(this.artifactTmpDir);
 
   // get build configuration -- required
   const buildConfig: IBuildConfig = this.config.build;
@@ -29,11 +29,11 @@ export default async function build(): Promise<void> {
     babel: buildConfig.babel || false,
     logger: this.logger,
     rootDir: process.cwd() + buildConfig.folder,
-    sourceMaps: buildConfig.sourceMaps || false,
+    sourceMaps: buildConfig.sourceMaps || false
   });
 
   await bundler.bundle({
     include: this.config.build.include,
-    output: `${this.artifactTmpDir}/${fileName}`,
+    output: `${this.artifactTmpDir}/${fileName}`
   });
 }

@@ -1,6 +1,14 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const BPromise = require("bluebird");
 const path = require("path");
 const AWS_1 = require("./lib/AWS");
 const build_1 = require("./lib/build");
@@ -69,11 +77,12 @@ class ElasticBeanstalkPlugin {
      */
     defineHooks() {
         return {
-            'elastic-beanstalk:deploy': () => BPromise.bind(this)
-                .then(validate_1.default)
-                .then(configure_1.default)
-                .then(build_1.default)
-                .then(deploy_1.default),
+            'elastic-beanstalk:deploy': () => __awaiter(this, void 0, void 0, function* () {
+                yield validate_1.default.bind(this)();
+                yield configure_1.default.bind(this)();
+                yield build_1.default.bind(this)();
+                yield deploy_1.default.bind(this)();
+            })
         };
     }
 }

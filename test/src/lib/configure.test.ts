@@ -1,4 +1,3 @@
-import * as BPromise from 'bluebird';
 import { expect } from 'chai';
 import * as fsp from 'fs-promise';
 import * as YAML from 'yamljs';

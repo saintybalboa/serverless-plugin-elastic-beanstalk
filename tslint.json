@@ -11,5 +11,6 @@
     "no-var-requires": false,
     "object-literal-sort-keys": false
   },
-  "rulesDirectory": []
+  "rulesDirectory": [],
+  "trailing-comma": "never"
 }

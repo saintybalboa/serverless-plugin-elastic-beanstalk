@@ -31,61 +31,32 @@ provider:
 plugins:
   - serverless-plugin-elastic-beanstalk
 
-custom:
+  # AWS Elastic Beanstalk config
   elastic-beanstalk:
-    variables:
-      applicationName: CartApplicationName
-      environmentName: CartApplicationEvironmentName
+    applicationName: custom-app-${opt:env}
+    environmentName: custom-env-${opt:env}
+    solutionStackName: '64bit Amazon Linux 2 v5.2.0 running Node.js 12'
+    version: '2.0.4'
     key: ${opt:key}
     file:
       prefix: bundles
-      name: bundle-latest.zip
+      name: api.zip
     platform: nodejs
-    script: scripts/configure.js
+    bucket: ${self:service}-${opt:env}
+    # script: scripts/configure.js
     build:
-      babel: true
+      babel: false
       sourceMaps: true
+      folder: /api
       include:
         - .ebextensions/**
         - src/**
-        - resources/schema/**
         - package.json
-
-functions:
-...
-resources:
-  Resources:
-    CartApplication:
-      Type: AWS::ElasticBeanstalk::Application
-      Properties:
-        ApplicationName: ${self:service}
-        Description: Cart application
-    CartEnvironment:
-      Type: AWS::ElasticBeanstalk::Environment
-      Properties:
-        ApplicationName:
-          Ref: CartApplication
-        Description: Cart environment
-        SolutionStackName: '64bit Amazon Linux 2017.03 v4.4.5 running Node.js'
-        OptionSettings:
-        - Namespace: aws:elasticbeanstalk:container:nodejs
-          OptionName: NodeVersion
-          Value: '7.6.0'
-        - Namespace: aws:elasticbeanstalk:environment
-          OptionName: EnvironmentType
-          Value: SingleInstance
-    ...
-  Outputs:
-    CartApplicationName:
-      Description: Cart application name
-      Value:
-        Ref: CartApplication
-    CartApplicationEvironmentName:
-      Description: Cart environment name
-      Value:
-        Ref: CartEnvironment
-...
+        - index.html
+        - cron.yaml
 ```
+
+List of AWS Beanstalk supported platforms: http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/concepts.platforms.html
 
 **NOTE:** If providing a custom script, that script must be exported from the module using `module.exports`.
 

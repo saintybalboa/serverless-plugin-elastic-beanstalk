@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getElasticBeanstalkInstance = exports.getS3Instance = void 0;
 /**
  * Get S3 instance.
  *

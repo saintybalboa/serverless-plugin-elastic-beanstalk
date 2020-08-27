@@ -1,29 +1,6 @@
 import { ElasticBeanstalk, S3 as IS3 } from "aws-sdk";
-import * as BPromise from 'bluebird';
-import * as fsp from 'fs-promise';
-import * as path from 'path';
+import fsp from 'promise-fs';
 import CLI from 'serverless/lib/classes/CLI';
-
-/**
- * List of supported platforms.
- *
- * @see http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/concepts.platforms.html
- */
-const platforms = {
-  go: '64bit Amazon Linux 2017.09 v2.7.6 running Go 1.9',
-  java8SE: '64bit Amazon Linux 2017.09 v2.6.6 running Java 8',
-  java8Tomcat8: '64bit Amazon Linux 2017.09 v2.7.6 running Tomcat 8 Java 8',
-  multiContainerDocker: '64bit Amazon Linux 2017.09 v2.8.4 running Multi-container Docker 17.09.1-ce (Generic)',
-  netIIS85: '64bit Windows Server 2016 v1.2.0 running IIS 10.0',
-  nodejs: '64bit Amazon Linux 2017.09 v4.4.5 running Node.js',
-  packer: '64bit Amazon Linux 2017.09 v2.4.5 running Packer 1.0.3',
-  php70: '64bit Amazon Linux 2017.09 v2.6.5 running PHP 7.0',
-  php71: '64bit Amazon Linux 2017.09 v2.6.5 running PHP 7.1',
-  python34: '64bit Amazon Linux 2017.09 v2.6.5 running Python 3.4',
-  python36: '64bit Amazon Linux 2017.09 v2.6.5 running Python 3.6',
-  ruby23: '64bit Amazon Linux 2017.09 v2.7.1 running Ruby 2.3 (Puma)',
-  singleContainerDocker: '64bit Amazon Linux 2017.09 v2.8.4 running Docker 17.09.1-ce',
-};
 
 /**
  * Create a new ElasticBeanstalk configuration file.
@@ -40,15 +17,15 @@ async function createEBConfig(config: any, logger: CLI): Promise<void> {
   let content = await fsp.readFile(templatePath, 'utf-8');
 
   // create output dir if not exists
-  await fsp.ensureDir(`${process.cwd()}/.elasticbeanstalk`);
+  await fsp.access(`${process.cwd()}/.elasticbeanstalk`);
 
   const variables = {
     APPLICATION_ENVIRONMENT: config.environmentName,
     APPLICATION_NAME: config.applicationName,
     ENV: config.env,
     KEY: config.key,
-    PLATFORM: platforms[config.platform],
-    REGION: config.region,
+    PLATFORM: config.platform,
+    REGION: config.region
   };
 
   Object.keys(variables).forEach((key) => {
@@ -81,7 +58,7 @@ async function configureDockerRun(S3: IS3, config: any, logger: CLI): Promise<vo
     BUCKET_NAME: config.bucketName,
     CONFIG_FILE: config.configFile,
     IMAGE: config.image,
-    VERSION: config.version,
+    VERSION: config.version
   };
 
   Object.keys(variables).forEach((key) => {
@@ -94,7 +71,7 @@ async function configureDockerRun(S3: IS3, config: any, logger: CLI): Promise<vo
     await S3.upload({
       Body: content,
       Bucket: config.bucketName,
-      Key: 'Dockerrun.aws.json',
+      Key: 'Dockerrun.aws.json'
     }).promise();
   } catch (error) {
     logger.log(error);
@@ -127,7 +104,7 @@ export default async function configure(): Promise<void> {
     environmentName: this.config.environmentName,
     key: this.options.key,
     platform: this.config.platform,
-    region: this.options.region,
+    region: this.options.region
   };
 
   await createEBConfig(options, this.logger);
@@ -149,7 +126,7 @@ export default async function configure(): Promise<void> {
       await S3.upload({
         Body: await fsp.readFile(configFile, 'utf-8'),
         Bucket: bucketName,
-        Key: configFile,
+        Key: configFile
       }).promise();
 
       this.logger.log('docker auth file uploaded to to S3 successfully');
@@ -159,7 +136,7 @@ export default async function configure(): Promise<void> {
       bucketName,
       configFile,
       image: docker.image,
-      version: docker.version,
+      version: docker.version
     };
 
     await configureDockerRun(S3, dockerConfig, this.logger);
@@ -170,9 +147,9 @@ export default async function configure(): Promise<void> {
       ApplicationName: this.config.applicationName,
       SourceBundle: {
         S3Bucket: dockerConfig.bucketName,
-        S3Key: 'Dockerrun.aws.json',
+        S3Key: 'Dockerrun.aws.json'
       },
-      VersionLabel: dockerConfig.version,
+      VersionLabel: dockerConfig.version
     };
 
     await deployApplicationVersion(EB, params);

@@ -10,22 +10,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
- * Validate configuration.
+ * Delay
  *
- * @returns {undefined}
+ * @param {number} time delay in milliseconds
+ *
+ * @returns {IS3} S3 instance
  */
-function validate() {
+function delay(time) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (!this.serverless.config.servicePath) {
-            throw new this.serverless.classes
-                .Error('This command can only be run inside a service directory');
-        }
-        this.options.stage = this.options.stage
-            || (this.serverless.service.provider && this.serverless.service.provider.stage)
-            || 'dev';
-        this.options.region = this.options.region
-            || (this.serverless.service.provider && this.serverless.service.provider.region)
-            || 'us-east-1';
+        return new Promise((resolve) => setTimeout(resolve, time));
     });
 }
-exports.default = validate;
+exports.default = delay;

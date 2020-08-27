@@ -1,4 +1,3 @@
-import * as BPromise from 'bluebird';
 import * as path from 'path';
 import * as IServerless from 'serverless';
 import CLI from 'serverless/lib/classes/CLI';
@@ -97,11 +96,12 @@ export default class ElasticBeanstalkPlugin implements IElasticBeanstalk {
    */
   public defineHooks(): IElasticBeanstalkHooks {
     return {
-      'elastic-beanstalk:deploy': () => BPromise.bind(this)
-        .then(validate)
-        .then(configure)
-        .then(build)
-        .then(deploy),
+      'elastic-beanstalk:deploy': async () => {
+        await validate.bind(this)();
+        await configure.bind(this)();
+        await build.bind(this)();
+        await deploy.bind(this)();
+      }
     };
   }
 }

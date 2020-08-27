@@ -15,7 +15,7 @@
     "version": "version-changelog CHANGELOG.md && changelog-verify CHANGELOG.md && git add CHANGELOG.md"
   },
   "engines": {
-    "node": ">=6.10"
+    "node": ">=12"
   },
   "repository": {
     "type": "git",
@@ -32,16 +32,13 @@
   ],
   "dependencies": {
     "aws-sdk": "2.x.x",
-    "bluebird": "3.x.x",
     "bundle-bundler": "0.2.x",
-    "fs-promise": "2.x.x"
+    "promise-fs": "^2.1.1"
   },
   "devDependencies": {
-    "@types/bluebird": "3.x.x",
     "@types/chai": "4.x.x",
-    "@types/fs-promise": "1.x.x",
     "@types/mocha": "2.x.x",
-    "@types/node": "7.x.x",
+    "@types/node": "^7.10.11",
     "awesome-typescript-loader": "3.x.x",
     "babel-cli": "6.x.x",
     "babel-core": "6.x.x",
@@ -58,7 +55,7 @@
     "sinon": "1.x.x",
     "ts-node": "3.x.x",
     "tslint": "5.x.x",
-    "typescript": "2.x.x",
+    "typescript": "3.x.x",
     "version-changelog": "2.x.x",
     "webpack": "2.x.x",
     "yamljs": "0.x.x",

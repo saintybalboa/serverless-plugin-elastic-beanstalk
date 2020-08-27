@@ -1,8 +1,8 @@
 import { ElasticBeanstalk, S3 as IS3 } from "aws-sdk";
-import * as BPromise from 'bluebird';
-import * as fsp from 'fs-promise';
+import fsp from 'promise-fs';
 import * as path from 'path';
 import getVersion from './getVersion';
+import delay from '../utils/delay';
 
 /**
  * Retrieves stack Ouputs from AWS.
@@ -36,9 +36,9 @@ export default async function deploy() {
       await S3.upload({
         Body: fsp.createReadStream(bundlePath),
         Bucket: this.config.bucket,
-        Key: fileName,
-      }).promise(),
-    ),
+        Key: fileName
+      }).promise()
+    )
   );
 
   this.logger.log('Application Bundle Uploaded to S3 Successfully');
@@ -60,8 +60,8 @@ export default async function deploy() {
       JSON.stringify(
         await EB.createApplication({
           ApplicationName: this.config.applicationName
-        }).promise(),
-      ),
+        }).promise()
+      )
     );
   }
 
@@ -76,9 +76,9 @@ export default async function deploy() {
           S3Bucket: this.config.bucket,
           S3Key: fileName,
         },
-        VersionLabel: versionLabel,
-      }).promise(),
-    ),
+        VersionLabel: versionLabel
+      }).promise()
+    )
   );
 
   this.logger.log('Waiting for application version...');
@@ -87,7 +87,7 @@ export default async function deploy() {
 
   while (!updated) {
     const response = await EB.describeApplicationVersions({
-      VersionLabels: [versionLabel],
+      VersionLabels: [versionLabel]
     }).promise();
 
     this.logger.log(JSON.stringify(response));
@@ -97,7 +97,7 @@ export default async function deploy() {
     } else if (response.ApplicationVersions[0].Status === 'FAILED') {
       throw new Error('Creating Application Version Failed');
     } else {
-      await BPromise.delay(5000);
+      await delay(5000);
     }
   }
 
@@ -122,8 +122,8 @@ export default async function deploy() {
             },
             /* more items */
         ]
-        }).promise(),
-      ),
+        }).promise()
+      )
     );
   } else {
     this.logger.log('Updating Application Environment...');
@@ -133,8 +133,8 @@ export default async function deploy() {
         await EB.updateEnvironment({
           ApplicationName: this.config.applicationName,
           EnvironmentName: this.config.environmentName,
-          VersionLabel: versionLabel,
-        }).promise(),
+          VersionLabel: versionLabel
+        }).promise()
       ),
     );
   }
@@ -153,7 +153,7 @@ export default async function deploy() {
     if (response.Environments[0].Status === 'Ready') {
       updated = true;
     } else {
-      await BPromise.delay(5000);
+      await delay(5000);
     }
   }
 

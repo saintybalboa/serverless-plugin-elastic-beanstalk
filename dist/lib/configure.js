@@ -1,34 +1,15 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const fsp = require("fs-promise");
-/**
- * List of supported platforms.
- *
- * @see http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/concepts.platforms.html
- */
-const platforms = {
-    go: '64bit Amazon Linux 2017.09 v2.7.6 running Go 1.9',
-    java8SE: '64bit Amazon Linux 2017.09 v2.6.6 running Java 8',
-    java8Tomcat8: '64bit Amazon Linux 2017.09 v2.7.6 running Tomcat 8 Java 8',
-    multiContainerDocker: '64bit Amazon Linux 2017.09 v2.8.4 running Multi-container Docker 17.09.1-ce (Generic)',
-    netIIS85: '64bit Windows Server 2016 v1.2.0 running IIS 10.0',
-    nodejs: '64bit Amazon Linux 2017.09 v4.4.5 running Node.js',
-    packer: '64bit Amazon Linux 2017.09 v2.4.5 running Packer 1.0.3',
-    php70: '64bit Amazon Linux 2017.09 v2.6.5 running PHP 7.0',
-    php71: '64bit Amazon Linux 2017.09 v2.6.5 running PHP 7.1',
-    python34: '64bit Amazon Linux 2017.09 v2.6.5 running Python 3.4',
-    python36: '64bit Amazon Linux 2017.09 v2.6.5 running Python 3.6',
-    ruby23: '64bit Amazon Linux 2017.09 v2.7.1 running Ruby 2.3 (Puma)',
-    singleContainerDocker: '64bit Amazon Linux 2017.09 v2.8.4 running Docker 17.09.1-ce',
-};
+const promise_fs_1 = require("promise-fs");
 /**
  * Create a new ElasticBeanstalk configuration file.
  *
@@ -41,22 +22,22 @@ function createEBConfig(config, logger) {
     return __awaiter(this, void 0, void 0, function* () {
         const templatePath = `${__dirname}/../../resources/eb.config.yml`;
         const filePath = `${process.cwd()}/.elasticbeanstalk/config.yml`;
-        let content = yield fsp.readFile(templatePath, 'utf-8');
+        let content = yield promise_fs_1.default.readFile(templatePath, 'utf-8');
         // create output dir if not exists
-        yield fsp.ensureDir(`${process.cwd()}/.elasticbeanstalk`);
+        yield promise_fs_1.default.access(`${process.cwd()}/.elasticbeanstalk`);
         const variables = {
             APPLICATION_ENVIRONMENT: config.environmentName,
             APPLICATION_NAME: config.applicationName,
             ENV: config.env,
             KEY: config.key,
-            PLATFORM: platforms[config.platform],
-            REGION: config.region,
+            PLATFORM: config.platform,
+            REGION: config.region
         };
         Object.keys(variables).forEach((key) => {
             content = content.replace(new RegExp(`{{${key}}}`, 'g'), variables[key]);
         });
         try {
-            yield fsp.writeFile(filePath, content);
+            yield promise_fs_1.default.writeFile(filePath, content);
         }
         catch (error) {
             logger.log(error);
@@ -76,22 +57,22 @@ function configureDockerRun(S3, config, logger) {
     return __awaiter(this, void 0, void 0, function* () {
         const dockerRunFile = `${process.cwd()}/Dockerrun.aws.json`;
         const runtimeDockerRunFile = `${process.cwd()}/.serverless/Dockerrun.aws.json`;
-        let content = yield fsp.readFile(dockerRunFile, 'utf-8');
+        let content = yield promise_fs_1.default.readFile(dockerRunFile, 'utf-8');
         const variables = {
             BUCKET_NAME: config.bucketName,
             CONFIG_FILE: config.configFile,
             IMAGE: config.image,
-            VERSION: config.version,
+            VERSION: config.version
         };
         Object.keys(variables).forEach((key) => {
             content = content.replace(new RegExp(`{{${key}}}`, 'g'), variables[key]);
         });
         try {
-            yield fsp.writeFile(runtimeDockerRunFile, content);
+            yield promise_fs_1.default.writeFile(runtimeDockerRunFile, content);
             yield S3.upload({
                 Body: content,
                 Bucket: config.bucketName,
-                Key: 'Dockerrun.aws.json',
+                Key: 'Dockerrun.aws.json'
             }).promise();
         }
         catch (error) {
@@ -126,7 +107,7 @@ function configure() {
             environmentName: this.config.environmentName,
             key: this.options.key,
             platform: this.config.platform,
-            region: this.options.region,
+            region: this.options.region
         };
         yield createEBConfig(options, this.logger);
         if (this.config.docker) {
@@ -139,9 +120,9 @@ function configure() {
                 configFile = docker.auth.configFile;
                 this.logger.log('Uploading docker auth file to S3...');
                 yield S3.upload({
-                    Body: yield fsp.readFile(configFile, 'utf-8'),
+                    Body: yield promise_fs_1.default.readFile(configFile, 'utf-8'),
                     Bucket: bucketName,
-                    Key: configFile,
+                    Key: configFile
                 }).promise();
                 this.logger.log('docker auth file uploaded to to S3 successfully');
             }
@@ -149,7 +130,7 @@ function configure() {
                 bucketName,
                 configFile,
                 image: docker.image,
-                version: docker.version,
+                version: docker.version
             };
             yield configureDockerRun(S3, dockerConfig, this.logger);
             const EB = this.getElasticBeanstalkInstance(this.serverless, this.options.region);
@@ -157,9 +138,9 @@ function configure() {
                 ApplicationName: this.config.applicationName,
                 SourceBundle: {
                     S3Bucket: dockerConfig.bucketName,
-                    S3Key: 'Dockerrun.aws.json',
+                    S3Key: 'Dockerrun.aws.json'
                 },
-                VersionLabel: dockerConfig.version,
+                VersionLabel: dockerConfig.version
             };
             yield deployApplicationVersion(EB, params);
         }
