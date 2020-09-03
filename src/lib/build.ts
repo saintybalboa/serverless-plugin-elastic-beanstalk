@@ -1,5 +1,5 @@
 import Bundler from 'bundle-bundler';
-import fsp from 'promise-fs';
+import * as fse from 'fs-extra';
 import { IBuildConfig } from "../types";
 import getVersion from './getVersion';
 
@@ -20,7 +20,7 @@ export default async function build(): Promise<void> {
   this.logger.log(`Creating ${fileName}`);
 
   // make sure artifact directory exists
-  await fsp.access(this.artifactTmpDir);
+  await fse.ensureDir(this.artifactTmpDir);
 
   // get build configuration -- required
   const buildConfig: IBuildConfig = this.config.build;

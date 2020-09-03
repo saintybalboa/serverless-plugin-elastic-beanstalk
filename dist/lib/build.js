@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const bundle_bundler_1 = require("bundle-bundler");
-const promise_fs_1 = require("promise-fs");
+const fse = require("fs-extra");
 const getVersion_1 = require("./getVersion");
 /**
  * Builds the application.
@@ -26,7 +26,7 @@ function build() {
         const fileName = `bundle-${versionLabel}.zip`;
         this.logger.log(`Creating ${fileName}`);
         // make sure artifact directory exists
-        yield promise_fs_1.default.access(this.artifactTmpDir);
+        yield fse.ensureDir(this.artifactTmpDir);
         // get build configuration -- required
         const buildConfig = this.config.build;
         const bundler = new bundle_bundler_1.default({

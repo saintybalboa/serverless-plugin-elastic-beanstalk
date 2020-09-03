@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const promise_fs_1 = require("promise-fs");
+const fse = require("fs-extra");
 /**
  * Create a new ElasticBeanstalk configuration file.
  *
@@ -24,7 +25,7 @@ function createEBConfig(config, logger) {
         const filePath = `${process.cwd()}/.elasticbeanstalk/config.yml`;
         let content = yield promise_fs_1.default.readFile(templatePath, 'utf-8');
         // create output dir if not exists
-        yield promise_fs_1.default.access(`${process.cwd()}/.elasticbeanstalk`);
+        yield fse.ensureDir(`${process.cwd()}/.elasticbeanstalk`);
         const variables = {
             APPLICATION_ENVIRONMENT: config.environmentName,
             APPLICATION_NAME: config.applicationName,

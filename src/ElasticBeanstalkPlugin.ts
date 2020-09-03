@@ -81,7 +81,8 @@ export default class ElasticBeanstalkPlugin implements IElasticBeanstalk {
         lifecycleEvents: [
           'validate',
           'configure',
-          'deploy',
+          'build',
+          'deploy'
         ],
         options: commonOptions,
         usage: 'Deploys the application to AWS ElasticBeanstalk',

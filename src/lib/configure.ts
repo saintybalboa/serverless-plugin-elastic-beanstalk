@@ -1,5 +1,6 @@
 import { ElasticBeanstalk, S3 as IS3 } from "aws-sdk";
 import fsp from 'promise-fs';
+import * as fse from 'fs-extra';
 import CLI from 'serverless/lib/classes/CLI';
 
 /**
@@ -17,7 +18,7 @@ async function createEBConfig(config: any, logger: CLI): Promise<void> {
   let content = await fsp.readFile(templatePath, 'utf-8');
 
   // create output dir if not exists
-  await fsp.access(`${process.cwd()}/.elasticbeanstalk`);
+  await fse.ensureDir(`${process.cwd()}/.elasticbeanstalk`);
 
   const variables = {
     APPLICATION_ENVIRONMENT: config.environmentName,
